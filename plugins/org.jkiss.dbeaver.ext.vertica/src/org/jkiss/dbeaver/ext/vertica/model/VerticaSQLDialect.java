@@ -16,11 +16,15 @@
  */
 package org.jkiss.dbeaver.ext.vertica.model;
 
+import org.jkiss.code.NotNull;
+import org.jkiss.code.Nullable;
 import org.jkiss.dbeaver.ext.generic.model.GenericSQLDialect;
+import org.jkiss.dbeaver.model.exec.DBCLogicalOperator;
 import org.jkiss.dbeaver.model.exec.jdbc.JDBCDatabaseMetaData;
 import org.jkiss.dbeaver.model.exec.jdbc.JDBCSession;
 import org.jkiss.dbeaver.model.impl.jdbc.JDBCDataSource;
 import org.jkiss.dbeaver.model.impl.sql.BasicSQLDialect;
+import org.jkiss.dbeaver.model.sql.SQLExpressionFormatter;
 
 import java.util.Arrays;
 
@@ -29,6 +33,7 @@ public class VerticaSQLDialect extends GenericSQLDialect {
     private static String[] VERTICA_KEYWORDS = new String[]{
             // SELECT * FROM keywords WHERE reserved = 'R'
             "BIT",
+            "CACHE",
             "COMMENT",
             "CORRELATION",
             "ENCODED",
@@ -45,6 +50,7 @@ public class VerticaSQLDialect extends GenericSQLDialect {
             "NULLSEQUAL",
             "OFFSET",
             "PINNED",
+            "PROJECTION",
             "SMALLDATETIME",
             "TEXT",
             "TIMESERIES",
@@ -79,5 +85,14 @@ public class VerticaSQLDialect extends GenericSQLDialect {
 
     public String[][] getIdentifierQuoteStrings() {
         return BasicSQLDialect.DEFAULT_IDENTIFIER_QUOTES;
+    }
+
+    @Nullable
+    @Override
+    public SQLExpressionFormatter getCaseInsensitiveExpressionFormatter(@NotNull DBCLogicalOperator operator) {
+        if (operator == DBCLogicalOperator.LIKE) {
+            return (left, right) -> left + " ILIKE " + right;
+        }
+        return super.getCaseInsensitiveExpressionFormatter(operator);
     }
 }

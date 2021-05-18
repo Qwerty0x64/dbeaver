@@ -26,6 +26,7 @@ import org.jkiss.dbeaver.Log;
 import org.jkiss.dbeaver.model.DBPNamedObject;
 import org.jkiss.dbeaver.model.meta.IPropertyValueListProvider;
 import org.jkiss.dbeaver.model.meta.IPropertyValueValidator;
+import org.jkiss.dbeaver.model.meta.PropertyLength;
 import org.jkiss.dbeaver.model.preferences.DBPPropertyDescriptor;
 import org.jkiss.dbeaver.model.preferences.DBPPropertySource;
 import org.jkiss.dbeaver.runtime.properties.ObjectPropertyDescriptor;
@@ -60,6 +61,8 @@ public class PropertyEditorUtils {
 
     public static CellEditor createCellEditor(Composite parent, Object object, DBPPropertyDescriptor property, int style)
     {
+        boolean isPropertySheet = (style & SWT.SHEET) != 0;
+        style &= ~SWT.SHEET;
         // List
         if (property instanceof IPropertyValueListProvider) {
             final IPropertyValueListProvider listProvider = (IPropertyValueListProvider) property;
@@ -78,7 +81,7 @@ public class PropertyEditorUtils {
         }
         Class<?> propertyType = property.getDataType();
         if (propertyType == null || CharSequence.class.isAssignableFrom(propertyType)) {
-            if (property instanceof ObjectPropertyDescriptor && ((ObjectPropertyDescriptor) property).isMultiLine()) {
+            if (property instanceof ObjectPropertyDescriptor && ((ObjectPropertyDescriptor) property).getLength() == PropertyLength.MULTILINE) {
                 AdvancedTextCellEditor editor = new AdvancedTextCellEditor(parent);
                 setValidator(editor, property, object);
                 return editor;
@@ -92,7 +95,11 @@ public class PropertyEditorUtils {
             setValidator(editor, property, object);
             return editor;
         } else if (BeanUtils.isBooleanType(propertyType)) {
-            return new CustomCheckboxCellEditor(parent, style);
+            if (isPropertySheet) {
+                return new CustomComboBoxCellEditor(parent, new String[] { Boolean.TRUE.toString(), Boolean.FALSE.toString()} , SWT.DROP_DOWN | SWT.READ_ONLY);
+            } else {
+                return new CustomCheckboxCellEditor(parent, style);
+            }
             //return new CheckboxCellEditor(parent);
         } else if (propertyType.isEnum()) {
             final Object[] enumConstants = propertyType.getEnumConstants();

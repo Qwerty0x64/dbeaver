@@ -17,6 +17,7 @@
  */
 package org.jkiss.dbeaver.ext.mysql.edit;
 
+import org.jkiss.code.NotNull;
 import org.jkiss.code.Nullable;
 import org.jkiss.dbeaver.DBException;
 import org.jkiss.dbeaver.ext.mysql.MySQLConstants;
@@ -82,15 +83,18 @@ public class MySQLTableColumnManager extends SQLTableColumnManager<MySQLTableCol
     };
 
     private final ColumnModifier<MySQLTableColumn> ExtraInfoModifier = (monitor, column, sql, command) -> {
-        if (!CommonUtils.isEmpty(column.getExtraInfo())) {
-            if (MySQLConstants.EXTRA_INFO_VIRTUAL_GENERATED.equalsIgnoreCase(column.getExtraInfo())) {
+        String extraInfo = column.getExtraInfo();
+        if (!CommonUtils.isEmpty(extraInfo)) {
+            if (MySQLConstants.EXTRA_INFO_VIRTUAL_GENERATED.equalsIgnoreCase(extraInfo)) {
                 if (!CommonUtils.isEmpty(column.getGenExpression())) {
                     sql.append(" GENERATED ALWAYS AS (").append(column.getGenExpression()).append(") VIRTUAL"); //$NON-NLS-1$ //$NON-NLS-2$
                 } else {
                     log.debug("No virtual column generate expression found for " + column.getName());
                 }
+            } else if (MySQLConstants.EXTRA_INFO_DEFAULT_GENERATED.equals(extraInfo)) {
+                // Do not add "DEFAULT_GENERATED" to the statement. It caused MySQLSyntaxErrorException. See #10797
             } else {
-                sql.append(" ").append(column.getExtraInfo()); //$NON-NLS-1$
+                sql.append(" ").append(extraInfo); //$NON-NLS-1$
             }
         }
     };
@@ -156,8 +160,8 @@ public class MySQLTableColumnManager extends SQLTableColumnManager<MySQLTableCol
     }
 
     @Override
-    public void renameObject(DBECommandContext commandContext, MySQLTableColumn object, String newName) throws DBException {
-        processObjectRename(commandContext, object, newName);
+    public void renameObject(@NotNull DBECommandContext commandContext, @NotNull MySQLTableColumn object, @NotNull Map<String, Object> options, @NotNull String newName) throws DBException {
+        processObjectRename(commandContext, object, options, newName);
     }
 
     @Override

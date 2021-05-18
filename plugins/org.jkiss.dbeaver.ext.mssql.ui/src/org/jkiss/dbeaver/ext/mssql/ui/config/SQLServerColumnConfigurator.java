@@ -14,28 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.jkiss.dbeaver.ext.mssql.ui.config;
 
-package org.jkiss.dbeaver.ext.mysql.ui.config;
-
-import org.jkiss.dbeaver.ext.mysql.model.MySQLTableColumn;
+import org.jkiss.dbeaver.ext.mssql.model.SQLServerTableColumn;
 import org.jkiss.dbeaver.model.edit.DBEObjectConfigurator;
 import org.jkiss.dbeaver.model.runtime.DBRProgressMonitor;
 import org.jkiss.dbeaver.ui.UITask;
 import org.jkiss.dbeaver.ui.editors.object.struct.AttributeEditPage;
 
-/**
- * MySQL table column manager
- */
-public class MySQLTableColumnConfigurator implements DBEObjectConfigurator<MySQLTableColumn> {
+public class SQLServerColumnConfigurator implements DBEObjectConfigurator<SQLServerTableColumn> {
     @Override
-    public MySQLTableColumn configureObject(DBRProgressMonitor monitor, Object table, MySQLTableColumn column) {
-        return UITask.run(() -> {
-            AttributeEditPage page = new AttributeEditPage(null, column);
-            if (!page.edit()) {
-                return null;
+    public SQLServerTableColumn configureObject(DBRProgressMonitor monitor, Object container, SQLServerTableColumn column) {
+        return new UITask<SQLServerTableColumn>() {
+            @Override
+            protected SQLServerTableColumn runTask() {
+                final AttributeEditPage page = new AttributeEditPage(null, column);
+                if (!page.edit()) {
+                    return null;
+                }
+                return column;
             }
-            return column;
-        });
+        }.execute();
     }
-
 }

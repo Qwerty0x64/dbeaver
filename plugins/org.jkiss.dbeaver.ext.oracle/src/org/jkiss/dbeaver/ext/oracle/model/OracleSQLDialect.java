@@ -33,6 +33,7 @@ import org.jkiss.dbeaver.model.impl.sql.BasicSQLDialect;
 import org.jkiss.dbeaver.model.preferences.DBPPreferenceStore;
 import org.jkiss.dbeaver.model.sql.SQLConstants;
 import org.jkiss.dbeaver.model.sql.SQLExpressionFormatter;
+import org.jkiss.dbeaver.model.struct.DBSAttributeBase;
 import org.jkiss.dbeaver.model.struct.DBSTypedObject;
 import org.jkiss.dbeaver.model.struct.rdb.DBSProcedure;
 import org.jkiss.utils.ArrayUtils;
@@ -382,6 +383,17 @@ public class OracleSQLDialect extends JDBCSQLDialect {
         return MultiValueInsertMode.INSERT_ALL;
     }
 
+    @NotNull
+    @Override
+    public String escapeScriptValue(DBSAttributeBase attribute, @NotNull Object value, @NotNull String strValue) {
+        if (CommonUtils.isNaN(value) || CommonUtils.isInfinite(value)) {
+            // These special values should be quoted, as shown in the example below
+            // https://docs.oracle.com/cd/B19306_01/server.102/b14200/functions090.htm
+            return '\'' + String.valueOf(value) + '\'';
+        }
+        return super.escapeScriptValue(attribute, value, strValue);
+    }
+
     @Override
     public boolean supportsAliasInSelect() {
         return true;
@@ -453,21 +465,43 @@ public class OracleSQLDialect extends JDBCSQLDialect {
 
     @Override
     public String getColumnTypeModifiers(@NotNull DBPDataSource dataSource, @NotNull DBSTypedObject column, @NotNull String typeName, @NotNull DBPDataKind dataKind) {
-        if (dataKind == DBPDataKind.NUMERIC) {
-            if (OracleConstants.TYPE_NUMBER.equals(typeName)) {
+        Integer scale;
+        switch (typeName) {
+            case OracleConstants.TYPE_NUMBER:
+            case OracleConstants.TYPE_DECIMAL:
                 OracleDataType dataType = (OracleDataType) DBUtils.getDataType(column);
-                Integer scale = column.getScale();
+                scale = column.getScale();
                 int precision = CommonUtils.toInt(column.getPrecision());
                 if (precision == 0 && dataType != null && scale != null && scale == dataType.getMinScale()) {
                     return "";
                 }
-                if (precision == 0) {
+                if (precision == 0 || precision > OracleConstants.NUMERIC_MAX_PRECISION) {
                     precision = OracleConstants.NUMERIC_MAX_PRECISION;
                 }
-                if (scale != null && scale >= 0 && precision >= 0 && !(scale == 0 && precision == 0)) {
-                    return "(" + precision + ',' + scale + ')';
+                if (scale != null && precision > 0) {
+                    return "(" + precision + ',' + scale + ")";
                 }
-            }
+                break;
+            case OracleConstants.TYPE_INTERVAL_DAY_SECOND:
+                // This interval type has fractional seconds precision. In bounds from 0 to 9. We can show this parameter.
+                // FIXME: This type has day precision inside type name. Like INTERVAL DAY(2) TO SECOND(6). So far we can't show it (But we do it in Column Manager)
+                scale = column.getScale();
+                if (scale == null) {
+                    return "";
+                }
+                if (scale < 0 || scale > 9) {
+                    scale = OracleConstants.INTERVAL_DEFAULT_SECONDS_PRECISION;
+                }
+                return "(" + scale + ")";
+            case OracleConstants.TYPE_NAME_BFILE:
+            case OracleConstants.TYPE_NAME_CFILE:
+            case OracleConstants.TYPE_CONTENT_POINTER:
+            case OracleConstants.TYPE_LONG:
+            case OracleConstants.TYPE_LONG_RAW:
+            case OracleConstants.TYPE_OCTET:
+            case OracleConstants.TYPE_INTERVAL_YEAR_MONTH:
+                // Don't add modifiers to these types
+                return "";
         }
         return super.getColumnTypeModifiers(dataSource, column, typeName, dataKind);
     }

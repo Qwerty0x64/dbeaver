@@ -172,6 +172,7 @@ public final class SQLUtils {
             else if (c == '?' || c == '_') result.append(".");
             else if (c == '%') result.append(".*");
             else if (Character.isLetterOrDigit(c)) result.append(c);
+            else if (c == '(' || c == ')' || c == '[' || c == ']') result.append('\\').append(c);
             else if (c == '\\') {
                 if (i < like.length() - 1) {
                     char nc = like.charAt(i + 1);
@@ -363,7 +364,7 @@ public final class SQLUtils {
                 String[][] blockBoundStrings = syntaxManager.getDialect().getBlockBoundStrings();
                 if (blockBoundStrings != null) {
                     for (String[] blocks : blockBoundStrings) {
-                        int endIndex = test.indexOf(blocks[1]);
+                        int endIndex = test.lastIndexOf(blocks[1]);
                         if (endIndex > 0) {
                             // This is a block query if it ends with 'END' or with 'END id'
                             if (test.endsWith(blocks[1])) {
@@ -371,7 +372,7 @@ public final class SQLUtils {
                                 break;
                             } else {
                                 String afterEnd = test.substring(endIndex + blocks[1].length()).trim();
-                                if (CommonUtils.isJavaIdentifier(afterEnd)) {
+                                if (afterEnd.chars().noneMatch(Character::isWhitespace)) {
                                     isBlockQuery = true;
                                     break;
                                 }
@@ -533,7 +534,7 @@ public final class SQLUtils {
             Object value = constraint.getValue();
             if (DBUtils.isNullValue(value)) {
                 if (operator.getArgumentCount() == 0) {
-                    return operator.getStringValue();
+                    return operator.getExpression();
                 }
                 conString.append("IS ");
                 if (constraint.isReverseOperator()) {
@@ -546,7 +547,7 @@ public final class SQLUtils {
                 conString.append("NOT ");
             }
             if (operator.getArgumentCount() > 0) {
-                conString.append(operator.getStringValue());
+                conString.append(operator.getExpression());
                 for (int i = 0; i < operator.getArgumentCount(); i++) {
                     if (i > 0) {
                         conString.append(" AND");
@@ -579,7 +580,7 @@ public final class SQLUtils {
                     conString.append("IS NULL OR ").append(DBUtils.getObjectFullName(dataSource, constraint.getAttribute(), DBPEvaluationContext.DML)).append(" ");
                 }
 
-                conString.append(operator.getStringValue());
+                conString.append(operator.getExpression());
                 conString.append(" (");
                 if (!value.getClass().isArray()) {
                     value = new Object[] {value};
@@ -635,9 +636,6 @@ public final class SQLUtils {
             strValue = convertStreamToSQL(attribute, (DBDContent) value, valueHandler, dataSource);
         } else {
             strValue = valueHandler.getValueDisplayString(attribute, value, displayFormat);
-        }
-        if (value instanceof Number) {
-            return strValue;
         }
         SQLDialect sqlDialect = dataSource.getSQLDialect();
 

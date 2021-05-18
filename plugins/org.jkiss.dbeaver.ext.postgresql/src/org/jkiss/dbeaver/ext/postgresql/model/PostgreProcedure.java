@@ -30,6 +30,7 @@ import org.jkiss.dbeaver.model.impl.jdbc.JDBCUtils;
 import org.jkiss.dbeaver.model.impl.struct.AbstractProcedure;
 import org.jkiss.dbeaver.model.meta.Association;
 import org.jkiss.dbeaver.model.meta.Property;
+import org.jkiss.dbeaver.model.meta.PropertyLength;
 import org.jkiss.dbeaver.model.runtime.DBRProgressMonitor;
 import org.jkiss.dbeaver.model.sql.SQLUtils;
 import org.jkiss.dbeaver.model.struct.DBSObject;
@@ -53,7 +54,6 @@ public class PostgreProcedure extends AbstractProcedure<PostgreDataSource, Postg
 
     private static final String CAT_FLAGS = "Flags";
     private static final String CAT_PROPS = "Properties";
-    private static final String CAT_STATS = "Statistics";
 
     public static final float DEFAULT_EST_ROWS = 1000.0f;
     public static final float DEFAULT_COST = 100.0f;
@@ -548,12 +548,12 @@ public class PostgreProcedure extends AbstractProcedure<PostgreDataSource, Postg
         return procTransform;
     }
 
-    @Property(category = CAT_STATS, viewable = false, order = 30)
+    @Property(category = DBConstants.CAT_STATISTICS, viewable = false, order = 30)
     public float getExecCost() {
         return execCost;
     }
 
-    @Property(category = CAT_STATS, viewable = false, order = 31)
+    @Property(category = DBConstants.CAT_STATISTICS, viewable = false, order = 31)
     public float getEstRows() {
         return estRows;
     }
@@ -630,7 +630,7 @@ public class PostgreProcedure extends AbstractProcedure<PostgreDataSource, Postg
 
     @Nullable
     @Override
-    @Property(viewable = true, editable = true, updatable = true, multiline = true, order = 200)
+    @Property(viewable = true, editable = true, updatable = true, length = PropertyLength.MULTILINE, order = 200)
     public String getDescription()
     {
         return super.getDescription();

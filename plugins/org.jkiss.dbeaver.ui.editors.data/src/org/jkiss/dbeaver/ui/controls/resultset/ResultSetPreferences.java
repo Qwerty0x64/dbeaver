@@ -55,6 +55,7 @@ public final class ResultSetPreferences {
 
     public static final String RESULT_SET_USE_SMOOTH_SCROLLING = "resultset.hScroll.smooth"; //$NON-NLS-1$
     public static final String RESULT_SET_SHOW_BOOLEAN_AS_CHECKBOX = "resultset.show.boolean.checkbox"; //$NON-NLS-1$
+    public static final String RESULT_SET_CLICK_TOGGLE_BOOLEAN = "resultset.show.boolean.toggleOnClick"; //$NON-NLS-1$
     public static final String RESULT_SET_CALC_COLUMN_WIDTH_BY_VALUES = "resultset.calc.columnWidthByValues"; //$NON-NLS-1$
     public static final String RESULT_SET_SHOW_CONNECTION_NAME = "resultset.show.connectionName"; //$NON-NLS-1$
     public static final String RESULT_SET_COLORIZE_DATA_TYPES = "resultset.show.colorizeDataTypes"; //$NON-NLS-1$
@@ -91,5 +92,4 @@ public final class ResultSetPreferences {
     public static final String CONFIRM_KEEP_STATEMENT_OPEN = "keep_statement_open"; //$NON-NLS-1$
 
     public static final String KEEP_STATEMENT_OPEN = "keep.statement.open"; //$NON-NLS-1$
-
 }

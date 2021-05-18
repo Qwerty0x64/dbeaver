@@ -56,13 +56,14 @@ public class DataEditorsPreferencesInitializer extends AbstractPreferenceInitial
         PrefUtils.setDefaultPreferenceValue(store, ResultSetPreferences.RESULT_SET_BINARY_EDITOR_TYPE, IValueController.EditType.EDITOR);
         PrefUtils.setDefaultPreferenceValue(store, ResultSetPreferences.RESULT_SET_ORDERING_MODE, ResultSetUtils.OrderingMode.SMART);
         PrefUtils.setDefaultPreferenceValue(store, ResultSetPreferences.RESULT_SET_SHOW_ODD_ROWS, true);
-        PrefUtils.setDefaultPreferenceValue(store, ResultSetPreferences.RESULT_SET_HIGHLIGHT_SELECTED_ROWS, false);
+        PrefUtils.setDefaultPreferenceValue(store, ResultSetPreferences.RESULT_SET_HIGHLIGHT_SELECTED_ROWS, true);
         PrefUtils.setDefaultPreferenceValue(store, ResultSetPreferences.RESULT_SET_SHOW_CELL_ICONS, true);
         PrefUtils.setDefaultPreferenceValue(store, ResultSetPreferences.RESULT_SET_SHOW_ATTR_ICONS, true);
         PrefUtils.setDefaultPreferenceValue(store, ResultSetPreferences.RESULT_SET_SHOW_ATTR_FILTERS, true);
         PrefUtils.setDefaultPreferenceValue(store, ResultSetPreferences.RESULT_SET_SHOW_ATTR_ORDERING, true);
         PrefUtils.setDefaultPreferenceValue(store, ResultSetPreferences.RESULT_SET_USE_SMOOTH_SCROLLING, true);
         PrefUtils.setDefaultPreferenceValue(store, ResultSetPreferences.RESULT_SET_SHOW_BOOLEAN_AS_CHECKBOX, true);
+        PrefUtils.setDefaultPreferenceValue(store, ResultSetPreferences.RESULT_SET_CLICK_TOGGLE_BOOLEAN, true);
 
         PrefUtils.setDefaultPreferenceValue(store, ResultSetPreferences.RESULT_SET_DOUBLE_CLICK, Spreadsheet.DoubleClickBehavior.INLINE_EDITOR.name());
         PrefUtils.setDefaultPreferenceValue(store, ResultSetPreferences.RESULT_SET_AUTO_SWITCH_MODE, false);
@@ -98,5 +99,4 @@ public class DataEditorsPreferencesInitializer extends AbstractPreferenceInitial
         // Override default editor page
         //PrefUtils.setDefaultPreferenceValue(store, NavigatorPreferences.NAVIGATOR_DEFAULT_EDITOR_PAGE, DatabaseDataEditor.class.getName());
     }
-
 }

@@ -14,31 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.jkiss.dbeaver.ext.vertica.ui.config;
 
-package org.jkiss.dbeaver.ext.generic.views;
-
-import org.jkiss.dbeaver.ext.generic.model.GenericTableColumn;
+import org.jkiss.dbeaver.ext.vertica.model.VerticaSequence;
 import org.jkiss.dbeaver.model.edit.DBEObjectConfigurator;
 import org.jkiss.dbeaver.model.runtime.DBRProgressMonitor;
 import org.jkiss.dbeaver.ui.UITask;
-import org.jkiss.dbeaver.ui.editors.object.struct.AttributeEditPage;
+import org.jkiss.dbeaver.ui.editors.object.struct.CreateSequencePage;
 
-/**
- * Generic table column manager
- */
-public class GenericTableColumnConfigurator implements DBEObjectConfigurator<GenericTableColumn> {
+public class VerticaSequenceConfigurator implements DBEObjectConfigurator<VerticaSequence> {
+
     @Override
-    public GenericTableColumn configureObject(DBRProgressMonitor monitor, Object table, GenericTableColumn object) {
-        return new UITask<GenericTableColumn>() {
+    public VerticaSequence configureObject(DBRProgressMonitor monitor, Object container, VerticaSequence sequence) {
+        return new UITask<VerticaSequence>() {
             @Override
-            protected GenericTableColumn runTask() {
-                AttributeEditPage page = new AttributeEditPage(null, object);
-                if (!page.edit()) {
+            protected VerticaSequence runTask() {
+                CreateSequencePage editPage = new CreateSequencePage(sequence);
+                if (!editPage.edit()) {
                     return null;
                 }
-                return object;
+                sequence.setName(editPage.getSequenceName());
+                return sequence;
             }
         }.execute();
     }
-
 }

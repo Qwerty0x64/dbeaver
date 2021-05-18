@@ -43,7 +43,11 @@ public class SSLHandlerTrustStoreImpl extends SSLHandlerImpl {
     public static final String PROP_SSL_SELF_SIGNED_CERT = "ssl.self-signed-cert";
     public static final String PROP_SSL_KEYSTORE = "ssl.keystore";
     public static final String PROP_SSL_METHOD = "ssl.method";
+    public static final String PROP_SSL_FORCE_TLS12 = "ssl.forceTls12";
     public static final String CERT_TYPE = "ssl";
+
+    public static final String TLS_PROTOCOL_VAR_NAME = "jdk.tls.client.protocols";
+    public static final String TLS_1_2_VERSION = "TLSv1.2";
 
     /**
      * Creates certificates and adds them into trust store
@@ -66,9 +70,8 @@ public class SSLHandlerTrustStoreImpl extends SSLHandlerImpl {
         {
             if (method == SSLConfigurationMethod.KEYSTORE && keyStore != null) {
                 monitor.subTask("Load keystore");
-                byte[] keyStoreData = IOUtils.readFileToBuffer(new File(keyStore));
-                char[] keyStorePasswordData = CommonUtils.isEmpty(password) ? null : password.toCharArray();
-                securityManager.addCertificate(dataSource.getContainer(), CERT_TYPE, keyStoreData, keyStorePasswordData);
+                char[] keyStorePasswordData = CommonUtils.isEmpty(password) ? new char[0] : password.toCharArray();
+                securityManager.addCertificate(dataSource.getContainer(), CERT_TYPE, keyStore, keyStorePasswordData);
             } else if (!CommonUtils.isEmpty(caCertProp) || !CommonUtils.isEmpty(clientCertProp)) {
                 monitor.subTask("Load certificates");
                 byte[] caCertData = CommonUtils.isEmpty(caCertProp) ? null : IOUtils.readFileToBuffer(new File(caCertProp));
@@ -89,21 +92,23 @@ public class SSLHandlerTrustStoreImpl extends SSLHandlerImpl {
 
         String keyStorePath = securityManager.getKeyStorePath(dataSource.getContainer(), CERT_TYPE).getAbsolutePath();
         String keyStoreType = securityManager.getKeyStoreType(dataSource.getContainer());
+        char[] keyStorePass = securityManager.getKeyStorePassword(dataSource.getContainer(), CERT_TYPE);
 
         System.setProperty("javax.net.ssl.trustStore", keyStorePath);
         System.setProperty("javax.net.ssl.trustStoreType", keyStoreType);
-        System.setProperty("javax.net.ssl.trustStorePassword", String.valueOf(DefaultCertificateStorage.DEFAULT_PASSWORD));
+        System.setProperty("javax.net.ssl.trustStorePassword", String.valueOf(keyStorePass));
         System.setProperty("javax.net.ssl.keyStore", keyStorePath);
         System.setProperty("javax.net.ssl.keyStoreType", keyStoreType);
-        System.setProperty("javax.net.ssl.keyStorePassword", String.valueOf(DefaultCertificateStorage.DEFAULT_PASSWORD));
+        System.setProperty("javax.net.ssl.keyStorePassword", String.valueOf(keyStorePass));
     }
 
     public static SSLContext createTrustStoreSslContext(DBPDataSource dataSource, DBWHandlerConfiguration sslConfig) throws Exception {
         final DBACertificateStorage securityManager = dataSource.getContainer().getPlatform().getCertificateStorage();
         KeyStore trustStore = securityManager.getKeyStore(dataSource.getContainer(), CERT_TYPE);
+        char[] keyStorePass = securityManager.getKeyStorePassword(dataSource.getContainer(), CERT_TYPE);
 
         KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance("SunX509");
-        keyManagerFactory.init(trustStore, DefaultCertificateStorage.DEFAULT_PASSWORD);
+        keyManagerFactory.init(trustStore, keyStorePass);
         KeyManager[] keyManagers = keyManagerFactory.getKeyManagers();
 
         TrustManager[] trustManagers;
@@ -115,7 +120,10 @@ public class SSLHandlerTrustStoreImpl extends SSLHandlerImpl {
             trustManagers = trustManagerFactory.getTrustManagers();
         }
 
-        SSLContext sslContext = SSLContext.getInstance("SSL");
+        final boolean forceTLS12 = sslConfig.getBooleanProperty(PROP_SSL_FORCE_TLS12);
+
+
+        SSLContext sslContext = forceTLS12 ? SSLContext.getInstance(TLS_1_2_VERSION) : SSLContext.getInstance("SSL");
         sslContext.init(keyManagers, trustManagers, new SecureRandom());
         return sslContext;
     }

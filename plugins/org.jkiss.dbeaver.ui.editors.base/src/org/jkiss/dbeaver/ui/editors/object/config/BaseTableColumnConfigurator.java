@@ -15,30 +15,27 @@
  * limitations under the License.
  */
 
-package org.jkiss.dbeaver.ext.postgresql.ui.config;
+package org.jkiss.dbeaver.ui.editors.object.config;
 
-import org.jkiss.dbeaver.ext.postgresql.model.PostgreTableColumn;
 import org.jkiss.dbeaver.model.edit.DBEObjectConfigurator;
 import org.jkiss.dbeaver.model.runtime.DBRProgressMonitor;
+import org.jkiss.dbeaver.model.struct.DBSEntityAttribute;
 import org.jkiss.dbeaver.ui.UITask;
 import org.jkiss.dbeaver.ui.editors.object.struct.AttributeEditPage;
 
 /**
- * Postgre table column manager
+ * Base table column configurator
  */
-public class PostgreTableColumnConfigurator implements DBEObjectConfigurator<PostgreTableColumn> {
+public class BaseTableColumnConfigurator implements DBEObjectConfigurator<DBSEntityAttribute> {
     @Override
-    public PostgreTableColumn configureObject(DBRProgressMonitor monitor, Object table, PostgreTableColumn column) {
-        return new UITask<PostgreTableColumn>() {
-            @Override
-            protected PostgreTableColumn runTask() {
-                AttributeEditPage page = new AttributeEditPage(null, column);
-                if (!page.edit()) {
-                    return null;
-                }
-                return column;
+    public DBSEntityAttribute configureObject(DBRProgressMonitor monitor, Object table, DBSEntityAttribute column) {
+        return UITask.run(() -> {
+            AttributeEditPage page = new AttributeEditPage(null, column);
+            if (!page.edit()) {
+                return null;
             }
-        }.execute();
+            return column;
+        });
     }
 
 }

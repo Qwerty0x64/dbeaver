@@ -80,6 +80,8 @@ public class AssociationPart extends PropertyAwareConnectionPart {
         if (isEditEnabled()) {
             installEditPolicy(EditPolicy.COMPONENT_ROLE, new AssociationEditPolicy());
         }
+
+        getDiagramPart().getDiagram().getModelAdapter().installPartEditPolicies(this);
     }
 
     @Override
@@ -179,6 +181,7 @@ public class AssociationPart extends PropertyAwareConnectionPart {
             }
         }
 
+        conn.setLineWidth(2);
         if (!identifying || constraintType.isLogical()) {
             conn.setLineStyle(SWT.LINE_CUSTOM);
             conn.setLineDash(
@@ -252,7 +255,7 @@ public class AssociationPart extends PropertyAwareConnectionPart {
     @Override
     public void performRequest(Request request) {
         if (request.getType() == RequestConstants.REQ_OPEN) {
-            ERDUIUtils.openObjectEditor(getAssociation());
+            ERDUIUtils.openObjectEditor(getDiagramPart().getDiagram(), getAssociation());
         }
     }
 

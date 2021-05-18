@@ -43,6 +43,7 @@ import org.jkiss.dbeaver.model.exec.DBExecUtils;
 import org.jkiss.dbeaver.model.impl.SimpleExclusiveLock;
 import org.jkiss.dbeaver.model.impl.data.DefaultValueHandler;
 import org.jkiss.dbeaver.model.meta.Property;
+import org.jkiss.dbeaver.model.meta.PropertyLength;
 import org.jkiss.dbeaver.model.navigator.DBNBrowseSettings;
 import org.jkiss.dbeaver.model.net.*;
 import org.jkiss.dbeaver.model.preferences.DBPPropertySource;
@@ -347,7 +348,7 @@ public class DataSourceDescriptor
 
     @Nullable
     @Override
-    @Property(viewable = true, multiline = true, order = 2)
+    @Property(viewable = true, length = PropertyLength.MULTILINE, order = 2)
     public String getDescription()
     {
         return description;
@@ -777,34 +778,39 @@ public class DataSourceDescriptor
 
         // Update auth properties if possible
 
-        // 1. Get credentials from origin
-        DBPDataSourceOrigin dsOrigin = getOrigin();
-        if (dsOrigin instanceof DBAAuthCredentialsProvider) {
-            ((DBAAuthCredentialsProvider) dsOrigin).provideAuthParameters(this, resolvedConnectionInfo);
-        }
-
-        // 2. Get credentials from global provider
-        boolean authProvided = true;
-        DBAAuthCredentialsProvider authProvider = registry.getAuthCredentialsProvider();
-        if (authProvider != null) {
-            authProvided = authProvider.provideAuthParameters(this, resolvedConnectionInfo);
-        } else {
-            // 3. USe legacy password provider
-            if (!isSavePassword() && !getDriver().isAnonymousAccess()) {
-                // Ask for password
-                authProvided = askForPassword(this, null, false);
-            }
-        }
-        if (!authProvided) {
-            // Auth parameters were canceled
-            updateDataSourceObject(this);
-            return false;
-        }
-
         processEvents(monitor, DBPConnectionEventType.BEFORE_CONNECT);
 
         connecting = true;
         try {
+            // 1. Get credentials from origin
+            DBPDataSourceOrigin dsOrigin = getOrigin();
+            if (dsOrigin instanceof DBAAuthCredentialsProvider) {
+                monitor.beginTask("Read auth parameters from " + dsOrigin.getDisplayName(), 1);
+                try {
+                    ((DBAAuthCredentialsProvider) dsOrigin).provideAuthParameters(monitor, this, resolvedConnectionInfo);
+                } finally {
+                    monitor.done();
+                }
+            }
+
+            // 2. Get credentials from global provider
+            boolean authProvided = true;
+            DBAAuthCredentialsProvider authProvider = registry.getAuthCredentialsProvider();
+            if (authProvider != null) {
+                authProvided = authProvider.provideAuthParameters(monitor, this, resolvedConnectionInfo);
+            } else {
+                // 3. USe legacy password provider
+                if (!isSavePassword() && !getDriver().isAnonymousAccess()) {
+                    // Ask for password
+                    authProvided = askForPassword(this, null, false);
+                }
+            }
+            if (!authProvided) {
+                // Auth parameters were canceled
+                updateDataSourceObject(this);
+                return false;
+            }
+
             // Resolve variables
             if (preferenceStore.getBoolean(ModelPreferences.CONNECT_USE_ENV_VARS) ||
                 !CommonUtils.isEmpty(connectionInfo.getConfigProfileName()))

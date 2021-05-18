@@ -26,8 +26,10 @@ public class SQLConstants {
 
     public static final String STR_QUOTE_SINGLE = "'";
     public static final String STR_QUOTE_DOUBLE = "\"";
-    public static final String[][] DOUBLE_QUOTE_STRINGS = {{STR_QUOTE_DOUBLE, STR_QUOTE_DOUBLE}};
-    public static final String[] DEFAULT_SCRIPT_DELIMITER = {";"};
+    public static final String[][] DOUBLE_QUOTE_STRINGS = {{ STR_QUOTE_DOUBLE, STR_QUOTE_DOUBLE }};
+
+    public static final String DEFAULT_STATEMENT_DELIMITER = ";";
+    public static final String[] DEFAULT_SCRIPT_DELIMITER = { DEFAULT_STATEMENT_DELIMITER };
 
     public static final String STR_QUOTE_APOS = "`";
     public static final String ML_COMMENT_START = "/*";
@@ -62,6 +64,8 @@ public class SQLConstants {
 
     public static final String KEYWORD_COMMIT = "COMMIT";
     public static final String KEYWORD_ROLLBACK = "ROLLBACK";
+
+    public static final String KEYWORD_EXPLAIN = "EXPLAIN";
 
     public static final String[] TABLE_KEYWORDS = {
         KEYWORD_FROM,
@@ -639,7 +643,6 @@ public class SQLConstants {
     };
 
     public static final char STRUCT_SEPARATOR = '.'; //$NON-NLS-1$
-    public static final String DEFAULT_STATEMENT_DELIMITER = ";";
     public static final String CONFIG_COLOR_KEYWORD = "org.jkiss.dbeaver.sql.editor.color.keyword.foreground";
     public static final String CONFIG_COLOR_DATATYPE = "org.jkiss.dbeaver.sql.editor.color.datatype.foreground";
     public static final String CONFIG_COLOR_STRING = "org.jkiss.dbeaver.sql.editor.color.string.foreground";

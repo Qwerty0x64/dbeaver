@@ -16,6 +16,7 @@
  */
 package org.jkiss.dbeaver.ext.mssql.edit;
 
+import org.jkiss.code.NotNull;
 import org.jkiss.code.Nullable;
 import org.jkiss.dbeaver.DBException;
 import org.jkiss.dbeaver.ext.mssql.SQLServerUtils;
@@ -80,6 +81,16 @@ public class SQLServerTableColumnManager extends SQLTableColumnManager<SQLServer
         }
     };
 
+    protected final ColumnModifier<SQLServerTableColumn> ComputedModifier = (monitor, column, sql, command) -> {
+        final String definition = column.getComputedDefinition();
+        if (CommonUtils.isNotEmpty(definition)) {
+            sql.append(" AS ").append(definition);
+        }
+        if (column.isComputedPersisted()) {
+            sql.append(" PERSISTED");
+        }
+    };
+
     @Nullable
     @Override
     public DBSObjectCache<? extends DBSObject, SQLServerTableColumn> getObjectsCache(SQLServerTableColumn object)
@@ -89,6 +100,9 @@ public class SQLServerTableColumnManager extends SQLTableColumnManager<SQLServer
 
     protected ColumnModifier[] getSupportedModifiers(SQLServerTableColumn column, Map<String, Object> options)
     {
+        if (CommonUtils.isNotEmpty(column.getComputedDefinition())) {
+            return new ColumnModifier[]{ComputedModifier, NotNullModifier};
+        }
         return new ColumnModifier[] {DataTypeModifier, IdentityModifier, CollateModifier, SQLServerDefaultModifier, NullNotNullModifier};
     }
 
@@ -183,8 +197,8 @@ public class SQLServerTableColumnManager extends SQLTableColumnManager<SQLServer
     }
 
     @Override
-    public void renameObject(DBECommandContext commandContext, SQLServerTableColumn object, String newName) throws DBException {
-        processObjectRename(commandContext, object, newName);
+    public void renameObject(@NotNull DBECommandContext commandContext, @NotNull SQLServerTableColumn object, @NotNull Map<String, Object> options, @NotNull String newName) throws DBException {
+        processObjectRename(commandContext, object, options, newName);
     }
 
     @Override

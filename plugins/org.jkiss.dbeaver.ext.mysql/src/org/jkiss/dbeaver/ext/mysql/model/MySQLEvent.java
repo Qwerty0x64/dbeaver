@@ -22,6 +22,7 @@ import org.jkiss.dbeaver.DBException;
 import org.jkiss.dbeaver.model.*;
 import org.jkiss.dbeaver.model.impl.jdbc.JDBCUtils;
 import org.jkiss.dbeaver.model.meta.Property;
+import org.jkiss.dbeaver.model.meta.PropertyLength;
 import org.jkiss.dbeaver.model.runtime.DBRProgressMonitor;
 import org.jkiss.dbeaver.model.sql.SQLUtils;
 import org.jkiss.dbeaver.model.struct.DBSObject;
@@ -40,7 +41,6 @@ import java.util.Map;
 public class MySQLEvent implements MySQLSourceObject, DBPSaveableObject, DBPQualifiedObject {
 
     private static final String CAT_DETAILS = "Details";
-    private static final String CAT_STATS = "Statistics";
 
     private MySQLCatalog catalog;
     private boolean persisted;
@@ -123,7 +123,7 @@ public class MySQLEvent implements MySQLSourceObject, DBPSaveableObject, DBPQual
 
     @Nullable
     @Override
-    @Property(viewable = true, multiline = true, category = CAT_DETAILS, order = 100)
+    @Property(viewable = true, length = PropertyLength.MULTILINE, category = CAT_DETAILS, order = 100)
     public String getDescription() {
         return eventComment;
     }
@@ -198,7 +198,7 @@ public class MySQLEvent implements MySQLSourceObject, DBPSaveableObject, DBPQual
         return ends;
     }
 
-    @Property(category = CAT_STATS, order = 35)
+    @Property(category = DBConstants.CAT_STATISTICS, order = 35)
     public String getStatus() {
         return status;
     }
@@ -208,17 +208,17 @@ public class MySQLEvent implements MySQLSourceObject, DBPSaveableObject, DBPQual
         return onCompletion;
     }
 
-    @Property(category = CAT_STATS, order = 37)
+    @Property(category = DBConstants.CAT_STATISTICS, order = 37)
     public Date getCreated() {
         return created;
     }
 
-    @Property(category = CAT_STATS, order = 38)
+    @Property(category = DBConstants.CAT_STATISTICS, order = 38)
     public Date getLastAltered() {
         return lastAltered;
     }
 
-    @Property(category = CAT_STATS, order = 39)
+    @Property(category = DBConstants.CAT_STATISTICS, order = 39)
     public Date getLastExecuted() {
         return lastExecuted;
     }

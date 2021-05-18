@@ -128,8 +128,6 @@ public class SpreadsheetPresentation extends AbstractPresentation implements IRe
 
     private final Map<SpreadsheetValueController, IValueEditorStandalone> openEditors = new HashMap<>();
 
-    private SpreadsheetFindReplaceTarget findReplaceTarget;
-
     // UI modifiers
     private Color backgroundAdded;
     private Color backgroundDeleted;
@@ -164,11 +162,6 @@ public class SpreadsheetPresentation extends AbstractPresentation implements IRe
     private int highlightScopeLastLine;
     private Color highlightScopeColor;
     private boolean useNativeNumbersFormat;
-
-    public SpreadsheetPresentation() {
-        findReplaceTarget = new SpreadsheetFindReplaceTarget(this);
-
-    }
 
     public Spreadsheet getSpreadsheet() {
         return spreadsheet;
@@ -1055,7 +1048,7 @@ public class SpreadsheetPresentation extends AbstractPresentation implements IRe
                 }
             }
         } else {
-            if (isShowAsCheckbox(attr)) {
+            if (isShowAsCheckbox(attr) && getPreferenceStore().getBoolean(ResultSetPreferences.RESULT_SET_CLICK_TOGGLE_BOOLEAN)) {
                 // No inline boolean editor. Single click changes value
                 return null;
             }
@@ -1171,6 +1164,9 @@ public class SpreadsheetPresentation extends AbstractPresentation implements IRe
 
         Object value = controller.getModel().getCellValue(attr, row);
         if (isShowAsCheckbox(attr)) {
+            if (!getPreferenceStore().getBoolean(ResultSetPreferences.RESULT_SET_CLICK_TOGGLE_BOOLEAN)) {
+                return;
+            }
             if (!DBExecUtils.isAttributeReadOnly(attr)) {
                 // Switch boolean value
                 toggleBooleanValue(attr, row, value);
@@ -1366,7 +1362,7 @@ public class SpreadsheetPresentation extends AbstractPresentation implements IRe
             });
             return adapter.cast(page);
         } else if (adapter == IFindReplaceTarget.class) {
-            return adapter.cast(findReplaceTarget);
+            return adapter.cast(SpreadsheetFindReplaceTarget.getInstance().owned(this));
         }
         return null;
     }
@@ -1983,13 +1979,17 @@ public class SpreadsheetPresentation extends AbstractPresentation implements IRe
             ResultSetRow row = (ResultSetRow) (!recordMode ?  rowElement : colElement);
             DBDAttributeBinding attribute = (DBDAttributeBinding)(!recordMode ?  colElement : rowElement);
 
+            final SpreadsheetFindReplaceTarget findReplaceTarget = SpreadsheetFindReplaceTarget
+                .getInstance()
+                .owned(SpreadsheetPresentation.this);
+
             if (findReplaceTarget.isSessionActive()) {
                 boolean hasScope = highlightScopeFirstLine >= 0 && highlightScopeLastLine >= 0;
                 boolean inScope = hasScope && row.getVisualNumber() >= highlightScopeFirstLine && row.getVisualNumber() <= highlightScopeLastLine;
                 if (!hasScope || inScope) {
                     java.util.regex.Pattern searchPattern = findReplaceTarget.getSearchPattern();
                     if (searchPattern != null) {
-                        String cellText = getCellText(colElement, rowElement);
+                        String cellText = CommonUtils.toString(getCellValue(colElement, rowElement, false, false));
                         if (searchPattern.matcher(cellText).find()) {
                             return backgroundMatched;
                         }
@@ -2000,7 +2000,7 @@ public class SpreadsheetPresentation extends AbstractPresentation implements IRe
                 }
             }
 
-            if (!ignoreRowSelection && highlightRowsWithSelectedCells && spreadsheet.isRowSelected(row.getRowNumber())) {
+            if (!ignoreRowSelection && highlightRowsWithSelectedCells && spreadsheet.isRowSelected(row.getVisualNumber())) {
                 Color normalColor = getCellBackground(colElement, rowElement, false, true);
                 Color selectedCellColor;
                 if (normalColor == null || normalColor == backgroundNormal) {

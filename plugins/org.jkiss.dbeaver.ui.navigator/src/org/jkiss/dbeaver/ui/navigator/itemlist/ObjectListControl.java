@@ -64,6 +64,7 @@ import org.jkiss.utils.CommonUtils;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.*;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -299,10 +300,14 @@ public abstract class ObjectListControl<OBJECT_TYPE> extends ProgressPageControl
     }
 
     public void loadData() {
-        loadData(true);
+        loadData(true, false);
     }
 
     public void loadData(boolean lazy) {
+        loadData(lazy, false);
+    }
+
+    protected void loadData(boolean lazy, boolean forUpdate) {
         if (this.loadingJob != null) {
             int dataLoadUpdatePeriod = 200;
             int dataLoadTimes = getDataLoadTimeout() / dataLoadUpdatePeriod;
@@ -330,7 +335,7 @@ public abstract class ObjectListControl<OBJECT_TYPE> extends ProgressPageControl
         if (lazy) {
             // start loading service
             synchronized (this) {
-                this.loadingJob = createLoadService();
+                this.loadingJob = createLoadService(forUpdate);
                 if (this.loadingJob != null) {
                     this.loadingJob.addJobChangeListener(new JobChangeAdapter() {
                         @Override
@@ -343,7 +348,7 @@ public abstract class ObjectListControl<OBJECT_TYPE> extends ProgressPageControl
             }
         } else {
             // Load data synchronously
-            final LoadingJob<Collection<OBJECT_TYPE>> loadService = createLoadService();
+            final LoadingJob<Collection<OBJECT_TYPE>> loadService = createLoadService(forUpdate);
             if (loadService != null) {
                 loadService.syncRun();
             }
@@ -354,7 +359,7 @@ public abstract class ObjectListControl<OBJECT_TYPE> extends ProgressPageControl
         return 4000;
     }
 
-    protected void setListData(Collection<OBJECT_TYPE> items, boolean append) {
+    protected void setListData(Collection<OBJECT_TYPE> items, boolean append, boolean forUpdate) {
         final Control itemsControl = itemsViewer.getControl();
         if (itemsControl.isDisposed()) {
             return;
@@ -527,7 +532,7 @@ public abstract class ObjectListControl<OBJECT_TYPE> extends ProgressPageControl
     }
 
     public void appendListData(Collection<OBJECT_TYPE> items) {
-        setListData(items, true);
+        setListData(items, true, false);
     }
 
     public void repackColumns() {
@@ -576,6 +581,15 @@ public abstract class ObjectListControl<OBJECT_TYPE> extends ProgressPageControl
                     }
                 }
                 collectItemClasses(childItem, classList, collectedSet);
+            }
+        }
+    }
+
+    protected void resetLazyPropertyCache(OBJECT_TYPE object, String property) {
+        synchronized (lazyCache) {
+            Map<String, Object> cache = lazyCache.get(object);
+            if (cache != null) {
+                cache.remove(property);
             }
         }
     }
@@ -814,7 +828,11 @@ public abstract class ObjectListControl<OBJECT_TYPE> extends ProgressPageControl
     //////////////////////////////////////////////////////
     // Overridable functions
 
-    protected abstract LoadingJob<Collection<OBJECT_TYPE>> createLoadService();
+    /**
+     * Creates service for object loading.
+     * @param forUpdate true if it is update/merge operation. I.e. existing object modifications should remain.
+     */
+    protected abstract LoadingJob<Collection<OBJECT_TYPE>> createLoadService(boolean forUpdate);
 
     protected ObjectViewerRenderer createRenderer() {
         return new ViewerRenderer();
@@ -1085,13 +1103,20 @@ public abstract class ObjectListControl<OBJECT_TYPE> extends ProgressPageControl
 
     public class ObjectsLoadVisualizer extends ProgressVisualizer<Collection<OBJECT_TYPE>> {
 
+        private final boolean forUpdate;
+
+        public ObjectsLoadVisualizer(boolean forUpdate) {
+            this.forUpdate = forUpdate;
+        }
+
         public ObjectsLoadVisualizer() {
+            this(false);
         }
 
         @Override
         public void completeLoading(Collection<OBJECT_TYPE> items) {
             super.completeLoading(items);
-            setListData(items, false);
+            setListData(items, false, forUpdate);
         }
 
     }
@@ -1253,10 +1278,9 @@ public abstract class ObjectListControl<OBJECT_TYPE> extends ProgressPageControl
     }
 
     /**
-     * Searcher. Filters elements by name
+     * Searcher. Filters elements by name and description
      */
     public class SearcherFilter implements ISearchExecutor {
-
         @Override
         public boolean performSearch(String searchString, int options) {
             try {
@@ -1277,19 +1301,28 @@ public abstract class ObjectListControl<OBJECT_TYPE> extends ProgressPageControl
         }
     }
 
-    private class SearchFilter extends ViewerFilter {
-        final Pattern pattern;
+    private static final class SearchFilter extends ViewerFilter {
+        private final Pattern pattern;
 
-        public SearchFilter(String searchString, boolean caseSensitiveSearch) throws PatternSyntaxException {
+        private SearchFilter(String searchString, boolean caseSensitiveSearch) {
             pattern = Pattern.compile(SQLUtils.makeLikePattern(searchString), caseSensitiveSearch ? 0 : Pattern.CASE_INSENSITIVE);
         }
 
         @Override
         public boolean select(Viewer viewer, Object parentElement, Object element) {
-            if (element instanceof DBNNode) {
-                return pattern.matcher(((DBNNode) element).getName()).find();
+            if (!(element instanceof DBNNode)) {
+                return false;
             }
-            return false;
+            DBNNode node = (DBNNode) element;
+            return matches(node.getName()) || matches(node.getNodeDescription());
+        }
+
+        private boolean matches(@Nullable CharSequence charSequence) {
+            if (charSequence == null) {
+                return false;
+            }
+            Matcher matcher = pattern.matcher(charSequence);
+            return matcher.find();
         }
     }
 

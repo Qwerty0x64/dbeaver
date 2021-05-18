@@ -19,13 +19,11 @@ package org.jkiss.dbeaver.runtime.properties;
 import org.eclipse.core.internal.runtime.Activator;
 import org.jkiss.code.NotNull;
 import org.jkiss.code.Nullable;
+import org.jkiss.dbeaver.model.DBConstants;
 import org.jkiss.dbeaver.model.DBPPersistedObject;
 import org.jkiss.dbeaver.model.exec.DBExecUtils;
 import org.jkiss.dbeaver.model.impl.AbstractDescriptor;
-import org.jkiss.dbeaver.model.meta.IPropertyValueListProvider;
-import org.jkiss.dbeaver.model.meta.IPropertyValueTransformer;
-import org.jkiss.dbeaver.model.meta.IPropertyValueValidator;
-import org.jkiss.dbeaver.model.meta.Property;
+import org.jkiss.dbeaver.model.meta.*;
 import org.jkiss.dbeaver.model.preferences.DBPPropertyDescriptor;
 import org.jkiss.dbeaver.model.preferences.DBPPropertySource;
 import org.jkiss.dbeaver.model.runtime.DBRProgressMonitor;
@@ -52,6 +50,7 @@ import java.util.ResourceBundle;
 */
 public class ObjectPropertyDescriptor extends ObjectAttributeDescriptor implements DBPPropertyDescriptor, IPropertyValueListProvider<Object>
 {
+
     private final Property propInfo;
     private final String propName;
     private final String propDescription;
@@ -156,8 +155,8 @@ public class ObjectPropertyDescriptor extends ObjectAttributeDescriptor implemen
         return propType == Boolean.class || propType == Boolean.TYPE;
     }
 
-    public boolean isMultiLine() {
-        return propInfo.multiline();
+    public PropertyLength getLength() {
+        return propInfo.length();
     }
 
     public boolean isSpecific() {
@@ -226,56 +225,58 @@ public class ObjectPropertyDescriptor extends ObjectAttributeDescriptor implemen
     @Override
     public String[] getFeatures() {
         List<String> features = new ArrayList<>();
-        if (this.isRequired()) features.add("required");
-        if (this.isSpecific()) features.add("specific");
-        if (this.isOptional()) features.add("optional");
-        if (this.isHidden()) features.add("hidden");
-        if (this.isRemote()) features.add("remote");
+        if (this.isRequired()) features.add(DBConstants.PROP_FEATURE_REQUIRED);
+        if (this.isSpecific()) features.add(DBConstants.PROP_FEATURE_SPECIFIC);
+        if (this.isOptional()) features.add(DBConstants.PROP_FEATURE_OPTIONAL);
+        if (this.isHidden()) features.add(DBConstants.PROP_FEATURE_HIDDEN);
+        if (this.isRemote()) features.add(DBConstants.PROP_FEATURE_REMOTE);
 
-        if (this.isDateTime()) features.add("datetme");
-        if (this.isNumeric()) features.add("numeric");
-        if (this.isNameProperty()) features.add("name");
+        if (this.isDateTime()) features.add(DBConstants.PROP_FEATURE_DATETME);
+        if (this.isNumeric()) features.add(DBConstants.PROP_FEATURE_NUMERIC);
+        if (this.isNameProperty()) features.add(DBConstants.PROP_FEATURE_NAME);
 
-        if (this.isMultiLine()) features.add("multiline");
-        if (this.isExpensive()) features.add("expensive");
-        if (this.isEditPossible()) features.add("editPossible");
-        if (this.isLinkPossible()) features.add("linkPossible");
-        if (this.isHref()) features.add("href");
-        if (this.isViewable()) features.add("viewable");
-        if (this.isPassword()) features.add("password");
+        if (this.getLength() == PropertyLength.MULTILINE) features.add(DBConstants.PROP_FEATURE_MULTILINE);
+        if (this.isExpensive()) features.add(DBConstants.PROP_FEATURE_EXPENSIVE);
+        if (this.isEditPossible()) features.add(DBConstants.PROP_FEATURE_EDIT_POSSIBLE);
+        if (this.isLinkPossible()) features.add(DBConstants.PROP_FEATURE_LINK_POSSIBLE);
+        if (this.isHref()) features.add(DBConstants.PROP_FEATURE_HREF);
+        if (this.isViewable()) features.add(DBConstants.PROP_FEATURE_VIEWABLE);
+        if (this.isPassword()) features.add(DBConstants.PROP_FEATURE_PASSWORD);
         return features.toArray(new String[0]);
     }
 
     @Override
     public boolean hasFeature(@NotNull String feature) {
         switch (feature) {
-            case "required":
+            case DBConstants.PROP_FEATURE_REQUIRED:
                 return this.isRequired();
-            case "specific":
+            case DBConstants.PROP_FEATURE_SPECIFIC:
                 return this.isSpecific();
-            case "optional":
+            case DBConstants.PROP_FEATURE_OPTIONAL:
                 return this.isOptional();
-            case "hidden":
+            case DBConstants.PROP_FEATURE_HIDDEN:
                 return this.isHidden();
 
-            case "datetme":
+            case DBConstants.PROP_FEATURE_DATETME:
                 return this.isDateTime();
-            case "numeric":
+            case DBConstants.PROP_FEATURE_NUMERIC:
                 return this.isNumeric();
-            case "name":
+            case DBConstants.PROP_FEATURE_NAME:
                 return this.isNameProperty();
 
-            case "multiline":
-                return this.isMultiLine();
-            case "expensive":
+            case DBConstants.PROP_FEATURE_MULTILINE:
+                return this.getLength() == PropertyLength.MULTILINE;
+            case DBConstants.PROP_FEATURE_EXPENSIVE:
                 return this.isExpensive();
-            case "editPossible":
+            case DBConstants.PROP_FEATURE_EDIT_POSSIBLE:
                 return this.isEditPossible();
-            case "linkPossible":
+            case DBConstants.PROP_FEATURE_LINK_POSSIBLE:
                 return this.isLinkPossible();
-            case "viewable":
+            case DBConstants.PROP_FEATURE_HREF:
+                return this.isHref();
+            case DBConstants.PROP_FEATURE_VIEWABLE:
                 return this.isViewable();
-            case "password":
+            case DBConstants.PROP_FEATURE_PASSWORD:
                 return this.isPassword();
         }
         return false;
@@ -304,6 +305,15 @@ public class ObjectPropertyDescriptor extends ObjectAttributeDescriptor implemen
     private boolean isNewObject(Object object)
     {
         return object instanceof DBPPersistedObject && !((DBPPersistedObject) object).isPersisted();
+    }
+
+    public boolean isEditPossible(Object context)
+    {
+        String expr = propInfo.editableExpr();
+        if (!CommonUtils.isEmpty(expr)) {
+            return Boolean.TRUE.equals(evaluateExpression(context, expr));
+        }
+        return propInfo.editable();
     }
 
     @Override
@@ -432,9 +442,9 @@ public class ObjectPropertyDescriptor extends ObjectAttributeDescriptor implemen
                 // Use void monitor because this object already read by readValue
                 object = getParent().getGroupObject(object, new VoidProgressMonitor());
             }
+            final Class<?> argType = setter.getParameterTypes()[0];
             if (value == null) {
                 // Check for primitive argument
-                final Class<?> argType = setter.getParameterTypes()[0];
                 if (argType == Integer.TYPE) {
                     value = 0;
                 } else if (argType == Short.TYPE) {
@@ -449,6 +459,10 @@ public class ObjectPropertyDescriptor extends ObjectAttributeDescriptor implemen
                     value = false;
                 } else if (argType == Character.TYPE) {
                     value = ' ';
+                }
+            } else {
+                if (argType == Boolean.TYPE || argType == Boolean.class && !(value instanceof Boolean)) {
+                    value = CommonUtils.toBoolean(value);
                 }
             }
             setter.invoke(object, value);

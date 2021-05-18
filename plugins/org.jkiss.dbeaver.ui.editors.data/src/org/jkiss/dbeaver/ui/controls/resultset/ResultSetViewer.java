@@ -291,7 +291,8 @@ public class ResultSetViewer extends Viewer
         try {
             this.findReplaceTarget = new DynamicFindReplaceTarget();
 
-            this.viewerSash = UIUtils.createPartDivider(site.getPart(), this.viewerPanel, SWT.HORIZONTAL | SWT.SMOOTH);
+            this.viewerSash = new SashForm(this.viewerPanel, SWT.HORIZONTAL | SWT.SMOOTH);
+            this.viewerSash.setSashWidth(5);
             this.viewerSash.setLayoutData(new GridData(GridData.FILL_BOTH));
 
             this.presentationPanel = UIUtils.createPlaceholder(this.viewerSash, 1);
@@ -2680,6 +2681,7 @@ public class ResultSetViewer extends Viewer
         }
         if ((getDecorator().getDecoratorFeatures() & IResultSetDecorator.FEATURE_PANELS) != 0) {
             layoutMenu.add(ActionUtils.makeCommandContribution(site, ResultSetHandlerMain.CMD_TOGGLE_PANELS));
+            layoutMenu.add(ActionUtils.makeCommandContribution(site, ResultSetHandlerMain.CMD_ACTIVATE_PANELS));
             layoutMenu.add(ActionUtils.makeCommandContribution(site, ResultSetHandlerMain.CMD_TOGGLE_LAYOUT));
         }
         if ((getDecorator().getDecoratorFeatures() & IResultSetDecorator.FEATURE_PRESENTATIONS) != 0) {
@@ -3965,7 +3967,7 @@ public class ResultSetViewer extends Viewer
                 // No rows selected, use zero as the only row number
                 partitionedSelectedRows = new int[][]{new int[]{0, 0}};
             } else {
-                partitionedSelectedRows = groupContiguousRows(
+                partitionedSelectedRows = groupConsecutiveRows(
                     selectedRows.stream()
                         .mapToInt(ResultSetRow::getVisualNumber)
                         .toArray()
@@ -4090,7 +4092,7 @@ public class ResultSetViewer extends Viewer
      * @return grouped indexes
      */
     @NotNull
-    private static int[][] groupContiguousRows(@NotNull int[] indexes) {
+    private static int[][] groupConsecutiveRows(@NotNull int[] indexes) {
         final List<int[]> ranges = new ArrayList<>();
         for (int index = 1, start = 0, length = indexes.length; index <= length; index++) {
             if (index == length || indexes[index - 1] != indexes[index] - 1) {
@@ -4392,12 +4394,12 @@ public class ResultSetViewer extends Viewer
         strValue = strValue.replaceAll("\\s+", " ").replace("@", "^").trim();
         strValue = UITextUtils.getShortText(sizingGC, strValue, 150);
         if (operator.getArgumentCount() == 0) {
-            return operator.getStringValue();
+            return operator.getExpression();
         } else {
             if (!CUSTOM_FILTER_VALUE_STRING.equals(strValue)) {
                 strValue = "'" + strValue + "'";
             }
-            return operator.getStringValue() + " " + strValue;
+            return operator.getExpression() + " " + strValue;
         }
     }
 
